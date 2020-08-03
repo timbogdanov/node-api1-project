@@ -1,8 +1,10 @@
 const express = require('express');
 const shortid = require('shortid');
+const cors = require('cors');
 
 const server = express();
 server.use(express.json());
+server.use(cors());
 
 let users = [
   {
@@ -31,7 +33,7 @@ server.get('/', (req, res) => {
 server.post('/api/users', (req, res) => {
   try {
     const user = req.body;
-    if (user.name || user.bio) {
+    if (user.name && user.bio) {
       user.id = shortid.generate();
       users.push(user);
       res.status(201).json(users);
