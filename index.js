@@ -31,7 +31,7 @@ server.get('/', (req, res) => {
 server.post('/api/users', (req, res) => {
   try {
     const user = req.body;
-    if (user.name && user.bio) {
+    if (user.name || user.bio) {
       user.id = shortid.generate();
       users.push(user);
       res.status(201).json(users);
@@ -49,7 +49,13 @@ server.post('/api/users', (req, res) => {
 
 // GET: return an array of users
 server.get('/api/users', (req, res) => {
-  res.status(200).json(users);
+  try {
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({
+      errorMessage: `The user information could not be retrieved: ${error}`,
+    });
+  }
 });
 
 // GET: return a user object with a specified id
@@ -66,37 +72,59 @@ server.get('/api/users/:id', (req, res) => {
     }
   } catch (error) {
     res.status(500).json({
-      errorMessage: `There was an error while saving the user to the database: ${error}`,
+      errorMessage: `The user information could not be retrieved: ${error}`,
     });
   }
 });
 
 // DELETE: removes the user with a speified id and returns the deleted user object
 server.delete('/api/users/:id', (req, res) => {
-  const id = req.params.id.toLocaleLowerCase();
+  try {
+    const id = req.params.id.toLocaleLowerCase();
+    users = users.filter(
+      (user) => user.id.toLocaleLowerCase() !== id
+    );
 
-  users = users.filter((user) => user.id.toLocaleLowerCase() !== id);
-
-  res.status(204).end();
+    if (users) {
+      res.status(204).end();
+    } else {
+      res.status(404).json({
+        message: `The user with the specified ID does not exist.`,
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      errorMessage: `The user could not be removed: ${error}`,
+    });
+  }
 });
 
 // PUT: update the user with a specified id using data from the request body. Returns the modified user
 server.put('/api/users/:id', (req, res) => {
-  const id = req.params.id;
-  const changes = req.body;
+  try {
+    const id = req.params.id;
+    const changes = req.body;
 
-  let found = users.find((user) => user.id === id);
+    let found = users.find((user) => user.id === id);
 
-  console.log(found);
-
-  if (found) {
-    Object.assign(found, changes);
-
-    res.status(200).json(users);
-  } else {
-    res
-      .status(404)
-      .json({ message: `There is no account with id ${id}` });
+    if (found) {
+      if (changes.name || changes.bio) {
+        Object.assign(found, changes);
+        res.status(200).json(users);
+      } else {
+        res.status(400).json({
+          message: `Please provide name and bio for the user.`,
+        });
+      }
+    } else {
+      res
+        .status(404)
+        .json({ message: `There is no account with id` });
+    }
+  } catch (error) {
+    res.status(500).json({
+      errorMessage: `The user information could not be modified: ${error}`,
+    });
   }
 });
 
