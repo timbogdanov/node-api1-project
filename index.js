@@ -29,13 +29,22 @@ server.get('/', (req, res) => {
 
 // POST: creat e a user using the information sent inside the req.body
 server.post('/api/users', (req, res) => {
-  const user = req.body;
-
-  user.id = shortid.generate();
-
-  users.push(user);
-
-  res.status(201).json(users);
+  try {
+    const user = req.body;
+    if (user.name && user.bio) {
+      user.id = shortid.generate();
+      users.push(user);
+      res.status(201).json(users);
+    } else {
+      res.status(400).json({
+        message: `Please provide name and bio for the user.`,
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      errorMessage: `There was an error while saving the user to the database: ${error}`,
+    });
+  }
 });
 
 // GET: return an array of users
@@ -59,6 +68,26 @@ server.delete('/api/users/:id', (req, res) => {
   users = users.filter((user) => user.id.toLocaleLowerCase() !== id);
 
   res.status(204).end();
+});
+
+// PUT: update the user with a specified id using data from the request body. Returns the modified user
+server.put('/api/users/:id', (req, res) => {
+  const id = req.params.id;
+  const changes = req.body;
+
+  let found = users.find((user) => user.id === id);
+
+  console.log(found);
+
+  if (found) {
+    Object.assign(found, changes);
+
+    res.status(200).json(users);
+  } else {
+    res
+      .status(404)
+      .json({ message: `There is no account with id ${id}` });
+  }
 });
 
 // Watch for connections on port 8000
